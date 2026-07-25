@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { getRoundedPolygonString } from '../store/utils'
 import type { UmlClassType } from '../store/types';
-import { X, GripVertical, Star, Zap, Shield, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { X, GripVertical, Star, Zap, Shield, CheckCircle, AlertTriangle, Info, Minus, Plus } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -244,6 +244,9 @@ export const UmlClass: React.FC<UmlClassProps> = ({ cls }) => {
 
   if (isFsmState) {
     const w = cls.width || 140;
+    const isSigVisible = cls.signalsVisible !== false;
+    const sigMode = cls.signalMode || 'issued';
+    const colorHex = cls.color === 'yellow' ? '#eab308' : cls.color === 'green' ? '#10b981' : cls.color === 'rose' ? '#f43f5e' : '#3b82f6';
 
     return (
       <div
@@ -258,41 +261,77 @@ export const UmlClass: React.FC<UmlClassProps> = ({ cls }) => {
         style={{ left: cls.x, top: cls.y, width: w }}
         dir="ltr"
       >
-        {/* دایره اصلی استیت */}
-        <div
-          onMouseDown={handleDragStart}
-          onDoubleClick={(e) => { if (e.detail === 2) selectElement(cls.id, false, true); }}
-          className="w-full rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 cursor-grab active:cursor-grabbing transition-all"
-          style={{
-            height: w,
-            minHeight: 100,
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            border: `4px solid ${cls.color === 'yellow' ? '#eab308' : cls.color === 'green' ? '#10b981' : cls.color === 'rose' ? '#f43f5e' : '#3b82f6'}`
-          }}
-        >
-          <input
-            type="text"
-            value={cls.name}
-            onChange={(e) => updateClass(cls.id, { name: e.target.value })}
-            onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
-            onBlur={() => commitHistory()}
-            className="bg-transparent text-center text-white font-bold text-sm outline-none w-4/5 focus:bg-white/10 rounded transition-colors px-2 py-1"
-            placeholder="STATE_NAME"
-          />
-        </div>
+        <div className="relative flex flex-col items-center w-full">
+          {/* دایره اصلی استیت */}
+          <div
+            onMouseDown={handleDragStart}
+            onDoubleClick={(e) => { if (e.detail === 2) selectElement(cls.id, false, true); }}
+            className="w-full rounded-full flex items-center justify-center shadow-xl cursor-grab active:cursor-grabbing transition-all"
+            style={{
+              height: w,
+              minHeight: 100,
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              border: `4px solid ${colorHex}`,
+              boxShadow: `0 4px 14px 0 ${colorHex}33`
+            }}
+          >
+            <input
+              type="text"
+              value={cls.name}
+              onChange={(e) => updateClass(cls.id, { name: e.target.value })}
+              onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
+              onBlur={() => commitHistory()}
+              className="bg-transparent text-center text-white font-bold text-sm outline-none w-4/5 focus:bg-white/10 rounded transition-colors px-2 py-1"
+              placeholder="STATE_NAME"
+            />
+          </div>
 
-        {/* کارت سیگنال‌ها (زیر دایره) */}
-        <div className="w-full mt-2 bg-slate-100/90 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 rounded-lg p-2 shadow-md backdrop-blur-sm">
-          <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-center tracking-wider">Issued Signals</div>
-          <textarea
-            value={cls.issuedSignals || ''}
-            onChange={(e) => updateClass(cls.id, { issuedSignals: e.target.value })}
-            onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
-            onBlur={() => commitHistory()}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="w-full bg-transparent text-[11px] font-mono text-emerald-600 dark:text-emerald-400 outline-none resize-none"
-            rows={3}
-          />
+          {/* دکمه مخفی کردن/نمایش سیگنال‌ها */}
+          <button
+            onClick={(e) => { e.stopPropagation(); updateClass(cls.id, { signalsVisible: !isSigVisible }); commitHistory(); }}
+            className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-800 border-2 rounded-full flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors z-20 shadow-md"
+            style={{ borderColor: colorHex }}
+            title={isSigVisible ? "Hide Signals" : "Show Signals"}
+          >
+            {isSigVisible ? <Minus size={12} /> : <Plus size={12} />}
+          </button>
+
+          {/* کارت سیگنال‌ها (حالت‌دار و شیشه‌ای) */}
+          {isSigVisible && (
+            <div className="w-full mt-5 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg p-2 shadow-md backdrop-blur-sm flex flex-col gap-2">
+
+              {/* سوییچر بین Issued و All Signals */}
+              <div className="flex bg-slate-200 dark:bg-slate-900 rounded p-0.5 gap-0.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); updateClass(cls.id, { signalMode: 'issued' }); }}
+                  className={`flex-1 text-[10px] py-1 rounded font-bold transition-colors ${sigMode === 'issued' ? 'bg-blue-500 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'}`}
+                >
+                  Issued Signals
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); updateClass(cls.id, { signalMode: 'all' }); }}
+                  className={`flex-1 text-[10px] py-1 rounded font-bold transition-colors ${sigMode === 'all' ? 'bg-purple-500 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'}`}
+                >
+                  All Signals (Adv)
+                </button>
+              </div>
+
+              <textarea
+                value={(sigMode === 'issued' ? cls.issuedSignals : cls.allSignals) || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (sigMode === 'issued') updateClass(cls.id, { issuedSignals: val });
+                  else updateClass(cls.id, { allSignals: val });
+                }}
+                onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
+                onBlur={() => commitHistory()}
+                onMouseDown={(e) => e.stopPropagation()}
+                className={`w-full bg-transparent text-[11px] font-mono outline-none resize-none min-h-[40px] ${sigMode === 'issued' ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}
+                rows={3}
+                placeholder={sigMode === 'issued' ? 'e.g. out_valid = 1' : 'e.g. counter = 0'}
+              />
+            </div>
+          )}
         </div>
 
         {/* دستگیره تغییر سایز */}
@@ -307,7 +346,7 @@ export const UmlClass: React.FC<UmlClassProps> = ({ cls }) => {
       </div>
     );
   }
-  
+
   if (isPolygon && cls.vertices) {
     const fillColor = themeOpacityMap[color] || themeOpacityMap.slate;
 

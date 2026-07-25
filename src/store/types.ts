@@ -77,6 +77,10 @@ export interface UmlArrowType {
   middleLabelFontSize?: number;
   endLabelFontSize?: number;
   groupId?: string;
+  issuedSignals?: string;
+  allSignals?: string;
+  signalsVisible?: boolean;
+  signalMode?: 'issued' | 'all';
 }
 
 export type DragType = 'class' | 'class-rotate' | 'class-resize' | 'arrow-body' | 'arrow-segment' | 'label' | 'start' | 'end' | 'cp' | 'selection-box' | 'selection-group' | 'selection-group-rotate' | 'polygon-vertex' | 'draw-item' | 'panel-slider' | null;

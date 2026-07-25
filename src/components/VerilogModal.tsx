@@ -32,7 +32,10 @@ export const VerilogModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                     x: 0, y: 0,
                     width: 140,
                     height: 140,
-                    issuedSignals: '',
+                    issuedSignals: data.stateSignals && data.stateSignals[s] ? data.stateSignals[s].join('\n') : '',
+                    allSignals: '',
+                    signalsVisible: true,
+                    signalMode: 'issued',
                     color: 'blue'
                 }));
                 const newArrows = data.transitions.map((t: any) => ({
