@@ -7,6 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+obj_dir
+
 node_modules
 dist
 Archive

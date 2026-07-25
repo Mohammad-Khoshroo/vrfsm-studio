@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
 import { Toolbar } from '../components/Toolbar';
 import { Canvas } from '../components/Canvas';
 import { LeftPanel } from '../components/LeftPanel';
@@ -7,35 +6,11 @@ import { RightPanel } from '../components/RightPanel';
 import { BottomToolbar } from '../components/BottomToolbar';
 import { useStore } from '../store/useStore';
 import type { ToolType } from '../store/types';
-import { supabase } from '../supabaseClient';
-import { Loader2 } from 'lucide-react';
 
 export const Editor: React.FC = () => {
-  const { settings, setTool, deleteSelected, undo, redo, loadProject } = useStore();
+  const { settings, setTool, deleteSelected, undo, redo } = useStore();
   const prevToolRef = useRef<ToolType>('selection');
   const isSpacePanningRef = useRef(false);
-  const { projectId } = useParams();
-  const [isLoading, setIsLoading] = useState(!!projectId);
-
-  useEffect(() => {
-    const fetchProjectData = async () => {
-      if (!projectId) return;
-      try {
-        const { data, error } = await supabase.from('projects').select('file_url').eq('id', projectId).single();
-        if (error) throw error;
-        if (data?.file_url) {
-          const res = await fetch(data.file_url + '?t=' + Date.now()); // جلوگیری از کش شدن فایل در مرورگر
-          const jsonText = await res.text();
-          loadProject(jsonText);
-        }
-      } catch (err) {
-        console.error('Error loading project data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProjectData();
-  }, [projectId, loadProject]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,24 +31,11 @@ export const Editor: React.FC = () => {
 
       if (e.ctrlKey || e.metaKey) {
         if (e.key.toLowerCase() === 'z') {
-          if (e.shiftKey) {
-            redo();
-          } else {
-            undo();
-          }
-          e.preventDefault();
-          return;
+          if (e.shiftKey) { redo(); } else { undo(); }
+          e.preventDefault(); return;
         }
-        if (e.key.toLowerCase() === 'y') {
-          redo();
-          e.preventDefault();
-          return;
-        }
-        if (e.key.toLowerCase() === 'c') {
-          useStore.getState().copySelected();
-          e.preventDefault();
-          return;
-        }
+        if (e.key.toLowerCase() === 'y') { redo(); e.preventDefault(); return; }
+        if (e.key.toLowerCase() === 'c') { useStore.getState().copySelected(); e.preventDefault(); return; }
         if (e.key.toLowerCase() === 'v') {
           const state = useStore.getState();
           const canvasEl = document.getElementById('canvas');
@@ -83,14 +45,9 @@ export const Editor: React.FC = () => {
             const localY = (bounds.height / 2 - state.pan.y) / state.zoom;
             state.pasteFromClipboard(localX, localY);
           }
-          e.preventDefault();
-          return;
+          e.preventDefault(); return;
         }
-        if (e.key.toLowerCase() === 'd') {
-          useStore.getState().duplicateSelected();
-          e.preventDefault();
-          return;
-        }
+        if (e.key.toLowerCase() === 'd') { useStore.getState().duplicateSelected(); e.preventDefault(); return; }
         if (e.key.toLowerCase() === 'g') {
           e.preventDefault();
           const state = useStore.getState();
@@ -141,15 +98,6 @@ export const Editor: React.FC = () => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [setTool, deleteSelected, undo, redo, settings.customFonts]);
-
-  if (isLoading) {
-    return (
-      <div className="w-full h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-500">
-        <Loader2 size={32} className="animate-spin mb-4 text-blue-500" />
-        <p className="font-medium">Loading diagram...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-50 relative selection:bg-blue-500/20">

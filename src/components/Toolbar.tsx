@@ -1,21 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '../supabaseClient'; // Ensure supabase is imported
 import { useStore } from '../store/useStore';
-import { PlusSquare, FileText, ArrowRight, ArrowRightFromLine, MoreHorizontal, Layers, GripHorizontal, Camera, PanelLeft, PanelRight, Download, Upload, Minus, Type, Hexagon, Image as ImageIcon, Shapes, Square, Circle, Triangle, PenTool, Cloud, Save, Loader2, HelpCircle } from 'lucide-react';
+import { PlusSquare, FileText, ArrowRight, ArrowRightFromLine, MoreHorizontal, Layers, GripHorizontal, Camera, PanelLeft, PanelRight, Download, Upload, Minus, Type, Hexagon, Image as ImageIcon, Shapes, Square, Circle, Triangle, PenTool, Cloud, HelpCircle } from 'lucide-react';
 import { domToPng } from 'modern-screenshot'
 import { HelpModal } from './HelpModal';
-
+import { VerilogModal } from './VerilogModal';
+import { Cpu } from 'lucide-react';
 
 export const Toolbar: React.FC = () => {
   const { addClass, addTextBox, addComment, startDrawingPolygon, isDrawingPolygon, setPendingArrowType, pendingArrowType, settings, selectElement, toggleLeftPanel, isLeftPanelOpen, toggleRightPanel, isRightPanelOpen, classes, arrows, loadProject, addImage, pendingItemType, setPendingItemType, setPendingImageData, pendingShapeType, setPendingShapeType, showAlert } = useStore();
-  const { projectId } = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const shapeMenuRef = useRef<HTMLDivElement>(null);
+  const [isVerilogOpen, setIsVerilogOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -28,17 +26,14 @@ export const Toolbar: React.FC = () => {
   }, [isShapeMenuOpen]);
 
   const handleExport = () => {
-    selectElement(null); // Deselect everything before export
+    selectElement(null);
     setTimeout(() => {
       const canvasEl = document.getElementById('canvas') as HTMLElement;
       if (canvasEl) {
         const originalBgImage = canvasEl.style.backgroundImage;
-        
         if (settings.exportTransparent) {
-          // مخفی کردن موقتی پس‌زمینه گرید برای خروجی شفاف
           canvasEl.style.setProperty('background-image', 'none', 'important');
         }
-
         domToPng(canvasEl, {
           backgroundColor: settings.exportTransparent ? 'transparent' : (settings.isDarkMode ? '#0f172a' : '#f8fafc'),
           scale: settings.exportScale || 4,
@@ -50,7 +45,7 @@ export const Toolbar: React.FC = () => {
           link.click();
         }).catch(err => {
           console.error('Export failed:', err);
-        showAlert('An error occurred during export.', 'error');
+          showAlert('An error occurred during export.', 'error');
         }).finally(() => {
           if (settings.exportTransparent) {
             canvasEl.style.backgroundImage = originalBgImage;
@@ -61,7 +56,6 @@ export const Toolbar: React.FC = () => {
   };
 
   const handleSaveProject = async () => {
-    // تبدیل موقت آدرس‌های Blob به Base64 فقط برای ذخیره‌سازی در فایل جیسون
     const projectClasses = await Promise.all(classes.map(async (c) => {
       if (c.type === 'image' && c.imageUrl?.startsWith('blob:')) {
         try {
@@ -74,7 +68,6 @@ export const Toolbar: React.FC = () => {
           });
           return { ...c, imageUrl: base64 };
         } catch (err) {
-          console.error('Failed to convert image to base64', err);
           return c;
         }
       }
@@ -89,90 +82,6 @@ export const Toolbar: React.FC = () => {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleCloudSave = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!projectId || !user) {
-      showAlert('You must be logged in and have selected a project to save to the cloud.', 'error');
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const projectClasses = await Promise.all(classes.map(async (c) => {
-        if (c.type === 'image' && c.imageUrl?.startsWith('blob:')) {
-          try {
-            const res = await fetch(c.imageUrl);
-            const blob = await res.blob();
-            const base64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-            return { ...c, imageUrl: base64 };
-          } catch (err) {
-            return c;
-          }
-        }
-        return c;
-      }));
-
-      const projectData = { classes: projectClasses, arrows };
-      const jsonString = JSON.stringify(projectData, null, 2);
-
-      const filePath = `${user.id}/${projectId}.json`; // مسیر جدید: user_id/projectId.json
-
-      // ساخت و آپلود تصویر بندانگشتی (Thumbnail)
-      let thumbUrl = null;
-      try {
-        const canvasEl = document.getElementById('canvas');
-        if (canvasEl) {
-          const dataUrl = await domToPng(canvasEl, {
-            scale: 0.5, // مقیاس کوچک برای کاهش حجم و افزایش سرعت
-            backgroundColor: settings.isDarkMode ? '#0f172a' : '#f8fafc'
-          });
-          
-          // تبدیل امن Base64 به Blob
-          const arr = dataUrl.split(',');
-          const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-          const bstr = atob(arr[1]);
-          let n = bstr.length;
-          const u8arr = new Uint8Array(n);
-          while(n--){
-              u8arr[n] = bstr.charCodeAt(n);
-          }
-          const blob = new Blob([u8arr], { type: mime });
-
-          const thumbPath = `${user.id}/${projectId}_thumb.png`;
-          await supabase.storage.from('Diagrams').upload(thumbPath, blob, { contentType: 'image/png', upsert: true });
-          const { data } = supabase.storage.from('Diagrams').getPublicUrl(thumbPath);
-          thumbUrl = `${data.publicUrl}?v=${Date.now()}`; // استفاده از ورژن برای دور زدن کش مرورگر
-        }
-      } catch (err) {
-        console.error('Thumbnail generation failed:', err);
-      }
-
-      // آپلود در استوریج سوپابیس
-      const { error: uploadError } = await supabase.storage.from('Diagrams').upload(filePath, jsonString, {
-        contentType: 'application/json',
-        upsert: true
-      });
-      if (uploadError) throw uploadError;
-
-      // دریافت لینک عمومی و بروزرسانی رکورد پروژه
-      const { data: { publicUrl } } = supabase.storage.from('Diagrams').getPublicUrl(filePath);
-      const updateData: any = { file_url: publicUrl };
-      if (thumbUrl) updateData.thumbnail_url = thumbUrl;
-      const { error: dbError } = await supabase.from('projects').update(updateData).eq('id', projectId);
-      if (dbError) throw dbError;
-
-      showAlert('Project saved to cloud successfully.', 'success');
-    } catch (err) {
-      console.error(err);
-      showAlert('Failed to save project to the cloud.', 'error');
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handleLoadProject = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,7 +104,7 @@ export const Toolbar: React.FC = () => {
     img.onload = () => {
       let w = img.width;
       let h = img.height;
-      const maxW = 400; // حداکثر عرض اولیه
+      const maxW = 400;
       if (w > maxW) { h = (maxW / w) * h; w = maxW; }
       setPendingItemType('image');
       setPendingImageData({ url: objectUrl, width: w, height: h });
@@ -214,35 +123,23 @@ export const Toolbar: React.FC = () => {
 
       <div className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
-      <button 
-        onClick={() => setPendingItemType('class')} 
-        className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'class' ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/20'}`}
-      >
+      <button onClick={() => setPendingItemType('class')} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'class' ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/20'}`}>
         <PlusSquare size={16} /> Class
       </button>
 
-      <button 
-        onClick={() => setPendingItemType('text')} 
-        className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'text' ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600 hover:border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 dark:hover:bg-amber-500/20'}`}
-      >
+      <button onClick={() => setPendingItemType('text')} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'text' ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600 hover:border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 dark:hover:bg-amber-500/20'}`}>
         <FileText size={16} /> Note
       </button>
 
-      <button 
-        onClick={() => setPendingItemType('comment')} 
-        className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'comment' ? 'bg-purple-500 text-white border-purple-500 hover:bg-purple-600 hover:border-purple-600' : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/30 dark:hover:bg-purple-500/20'}`}
-      >
+      <button onClick={() => setPendingItemType('comment')} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'comment' ? 'bg-purple-500 text-white border-purple-500 hover:bg-purple-600 hover:border-purple-600' : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/30 dark:hover:bg-purple-500/20'}`}>
         <Type size={16} /> Text
       </button>
 
       <div className="relative flex" ref={shapeMenuRef}>
-        <button 
-          onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)} 
-          className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${((pendingItemType === 'shape' || isDrawingPolygon) && !isShapeMenuOpen) ? 'bg-pink-500 text-white border-pink-500 hover:bg-pink-600 hover:border-pink-600' : 'bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/30 dark:hover:bg-pink-500/20'}`}
-        >
+        <button onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${((pendingItemType === 'shape' || isDrawingPolygon) && !isShapeMenuOpen) ? 'bg-pink-500 text-white border-pink-500 hover:bg-pink-600 hover:border-pink-600' : 'bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/30 dark:hover:bg-pink-500/20'}`}>
           <Shapes size={16} /> Shape
         </button>
-        
+
         {isShapeMenuOpen && (
           <div className="absolute top-full left-0 mt-1.5 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-[200] flex flex-col overflow-hidden py-1">
             {[
@@ -252,15 +149,12 @@ export const Toolbar: React.FC = () => {
               { id: 'regularPolygon', icon: <Triangle size={14} />, label: 'Polygon (Regular)' },
               { id: 'freeform', icon: <PenTool size={14} />, label: 'Freeform (Custom)' },
             ].map(shape => (
-              <button
-                key={shape.id}
-                onClick={() => {
-                  if (shape.id === 'freeform') { startDrawingPolygon(); } 
-                  else { setPendingItemType('shape'); setPendingShapeType(shape.id as any); }
-                  setIsShapeMenuOpen(false);
-                }}
-                className={`flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${((pendingShapeType === shape.id && pendingItemType === 'shape') || (isDrawingPolygon && shape.id === 'freeform')) ? 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-              >
+              <button key={shape.id} onClick={() => {
+                if (shape.id === 'freeform') { startDrawingPolygon(); }
+                else { setPendingItemType('shape'); setPendingShapeType(shape.id as any); }
+                setIsShapeMenuOpen(false);
+              }}
+                className={`flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${((pendingShapeType === shape.id && pendingItemType === 'shape') || (isDrawingPolygon && shape.id === 'freeform')) ? 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                 {shape.icon} <span className="flex-1 text-left">{shape.label}</span>
               </button>
             ))}
@@ -269,17 +163,15 @@ export const Toolbar: React.FC = () => {
       </div>
 
       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageUpload} />
-      <button 
-        onClick={() => {
-          if (pendingItemType === 'image') {
-            setPendingItemType(null);
-            setPendingImageData(null);
-          } else {
-            imageInputRef.current?.click();
-          }
-        }}
-        className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'image' ? 'bg-cyan-500 text-white border-cyan-500 hover:bg-cyan-600 hover:border-cyan-600' : 'bg-cyan-50 text-cyan-600 border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30 dark:hover:bg-cyan-500/20'}`}
-      >
+      <button onClick={() => {
+        if (pendingItemType === 'image') {
+          setPendingItemType(null);
+          setPendingImageData(null);
+        } else {
+          imageInputRef.current?.click();
+        }
+      }}
+        className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'image' ? 'bg-cyan-500 text-white border-cyan-500 hover:bg-cyan-600 hover:border-cyan-600' : 'bg-cyan-50 text-cyan-600 border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30 dark:hover:bg-cyan-500/20'}`}>
         <ImageIcon size={16} /> Image
       </button>
 
@@ -288,41 +180,31 @@ export const Toolbar: React.FC = () => {
       {(() => {
         const getArrowBtnClass = (type: string) => `p-2 transition-colors ${pendingArrowType === type ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 rounded-md' : 'hover:bg-slate-100 dark:hover:bg-slate-700 rounded-sm'}`;
         return (
-      /* Compact Arrows Group */
-      <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden text-slate-600 dark:text-slate-300 px-0.5">
-        <button onClick={() => setPendingArrowType('association')} className={getArrowBtnClass('association')} title="Association"><ArrowRight size={16} /></button>
-        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
-        <button onClick={() => setPendingArrowType('inheritance')} className={getArrowBtnClass('inheritance')} title="Inheritance"><ArrowRightFromLine size={16} /></button>
-        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
-        <button onClick={() => setPendingArrowType('realization')} className={getArrowBtnClass('realization')} title="Realization"><MoreHorizontal size={16} /></button>
-        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
-        <button onClick={() => setPendingArrowType('composition')} className={getArrowBtnClass('composition')} title="Composition"><Layers size={16} /></button>
-        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
-        <button onClick={() => setPendingArrowType('aggregation')} className={getArrowBtnClass('aggregation')} title="Aggregation"><GripHorizontal size={16} /></button>
-        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
-        <button onClick={() => setPendingArrowType('line')} className={getArrowBtnClass('line')} title="Simple Line"><Minus size={16} /></button>
-      </div>
+          <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden text-slate-600 dark:text-slate-300 px-0.5">
+            <button onClick={() => setPendingArrowType('association')} className={getArrowBtnClass('association')} title="Association"><ArrowRight size={16} /></button>
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
+            <button onClick={() => setPendingArrowType('inheritance')} className={getArrowBtnClass('inheritance')} title="Inheritance"><ArrowRightFromLine size={16} /></button>
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
+            <button onClick={() => setPendingArrowType('realization')} className={getArrowBtnClass('realization')} title="Realization"><MoreHorizontal size={16} /></button>
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
+            <button onClick={() => setPendingArrowType('composition')} className={getArrowBtnClass('composition')} title="Composition"><Layers size={16} /></button>
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
+            <button onClick={() => setPendingArrowType('aggregation')} className={getArrowBtnClass('aggregation')} title="Aggregation"><GripHorizontal size={16} /></button>
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
+            <button onClick={() => setPendingArrowType('line')} className={getArrowBtnClass('line')} title="Simple Line"><Minus size={16} /></button>
+          </div>
         );
       })()}
 
       <div className="flex-grow"></div>
 
-      {projectId ? (
-        <button onClick={handleCloudSave} disabled={isSaving} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${isSaving ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'}`}>
-          {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
-        {isSaving ? 'Saving...' : 'Save to Cloud'}
-        </button>
-      ) : (
-        <>
-          <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleLoadProject} />
-          <button onClick={() => fileInputRef.current?.click()} className={btnClass} title="Load Project">
-            <Upload size={16} /> Load
-          </button>
-          <button onClick={handleSaveProject} className={btnClass} title="Save Project">
-            <Download size={16} /> Save Local
-          </button>
-        </>
-      )}
+      <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleLoadProject} />
+      <button onClick={() => fileInputRef.current?.click()} className={btnClass} title="Load Project">
+        <Upload size={16} /> Load
+      </button>
+      <button onClick={handleSaveProject} className={btnClass} title="Save Project">
+        <Download size={16} /> Save Local
+      </button>
 
       <div className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
@@ -336,14 +218,18 @@ export const Toolbar: React.FC = () => {
         <HelpCircle size={16} />
       </button>
 
+      <button onClick={() => setIsVerilogOpen(true)} className={btnClass} title="FSM Verilog Studio">
+        <Cpu size={16} /> FSM Studio
+      </button>
+      
       <div className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
       <button onClick={toggleRightPanel} className={`${btnClass} ${isRightPanelOpen ? 'bg-slate-100 dark:bg-slate-700' : ''}`} title="Toggle Properties Panel">
         <PanelRight size={16} />
       </button>
 
-      {/* Help Modal */}
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <VerilogModal isOpen={isVerilogOpen} onClose={() => setIsVerilogOpen(false)} />
     </div>
   );
 };
