@@ -24,7 +24,8 @@ export interface BadgeData {
 export interface UmlClassType {
   aspectRatio?: number;
   id: string;
-  type?: 'class' | 'text' | 'comment' | 'polygon' | 'image' | 'shape';
+    type?: 'class' | 'text' | 'comment' | 'polygon' | 'image' | 'shape' | 'fsm_state';
+  issuedSignals?: string;
   shapeType?: 'rectangle' | 'ellipse' | 'cloud' | 'regularPolygon';
   color?: ClassColor;
   name: string;
@@ -173,15 +174,15 @@ export interface ElementSlice {
   isDrawingPolygon: boolean;
   pendingPolygonVertices: Point[];
   editingPolygonId: string | null;
-
   pendingItemType: PendingItemType;
   pendingShapeType: ShapeType | null;
   pendingImageData: { url: string, width: number, height: number } | null;
-
+  
   setPendingItemType: (type: PendingItemType) => void;
   setPendingShapeType: (type: ShapeType | null) => void;
   setPendingImageData: (data: { url: string, width: number, height: number } | null) => void;
-
+  
+  addFsmState: (x?: number, y?: number) => string;
   addClass: (x?: number, y?: number, w?: number, h?: number) => string;
   addImage: (dataUrl: string, width: number, height: number, x?: number, y?: number, startZero?: boolean) => string;
   addShape: (shapeType: ShapeType, x?: number, y?: number, w?: number, h?: number) => string;

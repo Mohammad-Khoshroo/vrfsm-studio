@@ -26,14 +26,15 @@ export const VerilogModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             } else {
                 const newClasses = data.states.map((s: string, i: number) => ({
                     id: s,
-                    type: 'class',
+                    type: 'fsm_state',
                     name: s,
                     items: [],
-                    x: 0, y: 0, // موقتا صفر
-                    width: 180,
-                    height: 60
+                    x: 0, y: 0,
+                    width: 140,
+                    height: 140,
+                    issuedSignals: '',
+                    color: 'blue'
                 }));
-
                 const newArrows = data.transitions.map((t: any) => ({
                     id: 'arrow-' + Date.now() + Math.random(),
                     type: 'association',

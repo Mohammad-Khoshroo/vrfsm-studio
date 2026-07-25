@@ -18,8 +18,9 @@ export const RightPanel: React.FC = () => {
   const hasComment = selectedClasses.some(c => c.type === 'comment');
   const hasPolygon = selectedClasses.some(c => c.type === 'polygon');
   const hasImage = selectedClasses.some(c => c.type === 'image');
+  const hasFsmState = selectedClasses.some(c => c.type === 'fsm_state');
   const hasArrow = selectedArrows.length > 0;
-
+  
   const singleClass = selectedClasses.length === 1 ? selectedClasses[0] : null;
   const singleArrow = selectedArrows.length === 1 ? selectedArrows[0] : null;
 
@@ -35,7 +36,7 @@ export const RightPanel: React.FC = () => {
           <div className="text-xs text-slate-400 text-center mt-4">No item selected.</div>
         ) : (
           <>
-            {singleClass && singleClass.type !== 'text' && singleClass.type !== 'class' && singleClass.type !== undefined && (
+            {singleClass && singleClass.type !== 'text' && singleClass.type !== 'class' && singleClass.type !== undefined && singleClass.type !== 'fsm_state' && (
               <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-700/50 pb-4">
                 <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between">
                   Rotation
@@ -351,6 +352,32 @@ export const RightPanel: React.FC = () => {
                 >
                   Change Image
                 </button>
+              </div>
+            )}
+
+            {hasFsmState && (
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-4">
+                <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  FSM State Color
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { name: 'blue', bg: 'bg-blue-500' },
+                    { name: 'green', bg: 'bg-emerald-500' },
+                    { name: 'yellow', bg: 'bg-amber-500' },
+                    { name: 'rose', bg: 'bg-rose-500' },
+                  ].map(color => (
+                    <button 
+                      key={color.name}
+                      onClick={() => {
+                        selectedClasses.filter(c => c.type === 'fsm_state').forEach(c => updateClass(c.id, { color: color.name as any }));
+                        commitHistory();
+                      }}
+                      className={`w-6 h-6 rounded-full ${color.bg} border border-black/10 dark:border-white/10 hover:scale-110 transition-transform ${singleClass?.color === color.name ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-800' : ''}`}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 

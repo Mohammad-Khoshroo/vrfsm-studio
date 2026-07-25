@@ -29,6 +29,26 @@ export const createElementSlice: StateCreator<
     return id;
   },
 
+  addFsmState: (x = 250, y = 150) => {
+    const id = 'fsm-' + Date.now();
+    set((state) => ({
+      classes: [...state.classes, {
+        id,
+        type: 'fsm_state',
+        name: 'NEW_STATE',
+        items: [],
+        x, y,
+        width: 140,
+        height: 140,
+        issuedSignals: '// Signals issued here\n// e.g. out_valid = 1',
+        color: 'blue'
+      }],
+      selectedIds: [id]
+    }));
+    get().commitHistory();
+    return id;
+  },
+  
   addImage: (dataUrl, width, height, x = 150, y = 100, startZero = false) => {
     const id = 'image-' + Date.now();
     set((state) => ({
@@ -60,7 +80,7 @@ export const createElementSlice: StateCreator<
     });
     get().commitHistory();
   },
-  
+
   addShape: (shapeType, x = 150, y = 100, w?: number, h?: number) => {
     const id = 'shape-' + Date.now();
     set((state) => ({

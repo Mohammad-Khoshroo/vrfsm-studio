@@ -1,13 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { PlusSquare, FileText, ArrowRight, ArrowRightFromLine, MoreHorizontal, Layers, GripHorizontal, Camera, PanelLeft, PanelRight, Download, Upload, Minus, Type, Hexagon, Image as ImageIcon, Shapes, Square, Circle, Triangle, PenTool, Cloud, HelpCircle, LayoutGrid } from 'lucide-react';
+import { PlusSquare, FileText, ArrowRight, ArrowRightFromLine, MoreHorizontal, Layers, GripHorizontal, Camera, PanelLeft, PanelRight, Download, Upload, Minus, Type, Hexagon, Image as ImageIcon, Shapes, Square, Circle, Triangle, PenTool, Cloud, HelpCircle, LayoutGrid, CircleDot } from 'lucide-react';
 import { domToPng } from 'modern-screenshot'
 import { HelpModal } from './HelpModal';
 import { VerilogModal } from './VerilogModal';
 import { Cpu } from 'lucide-react';
 
 export const Toolbar: React.FC = () => {
-  const { addClass, addTextBox, addComment, startDrawingPolygon, isDrawingPolygon, setPendingArrowType, pendingArrowType, settings, selectElement, toggleLeftPanel, isLeftPanelOpen, toggleRightPanel, isRightPanelOpen, classes, arrows, loadProject, addImage, pendingItemType, setPendingItemType, setPendingImageData, pendingShapeType, setPendingShapeType, showAlert, autoLayout } = useStore();
+  const { addClass, addTextBox, addComment, startDrawingPolygon, isDrawingPolygon, setPendingArrowType, pendingArrowType, settings, selectElement, toggleLeftPanel, isLeftPanelOpen, toggleRightPanel, isRightPanelOpen, classes, arrows, loadProject, addImage, pendingItemType, setPendingItemType, setPendingImageData, pendingShapeType, setPendingShapeType, showAlert, autoLayout, addFsmState } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
@@ -136,6 +136,12 @@ export const Toolbar: React.FC = () => {
 
       <button onClick={() => setPendingItemType('class')} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'class' ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/20'}`}>
         <PlusSquare size={16} /> Class
+      </button>
+      <button
+        onClick={() => addFsmState(300, 200)}
+        className="flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30 dark:hover:bg-indigo-500/20"
+      >
+        <CircleDot size={16} /> FSM State
       </button>
 
       <button onClick={() => setPendingItemType('text')} className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${pendingItemType === 'text' ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600 hover:border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 dark:hover:bg-amber-500/20'}`}>
