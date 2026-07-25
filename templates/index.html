@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>FSM Studio (Local Pro)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='cytoscape.min.js') }}"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>⚡ VRFSM-Studio</h1>
+                <p>v0.0.2</p>
+            </div>
+            
+            <div class="section">
+                <h3>1- Input Verilog</h3>
+                <textarea id="verilog-input" placeholder="Enter verilog code..."></textarea>
+                <button class="btn btn-primary" onclick="parseCode()">verilator process</button>
+            </div>
+
+            <div class="section">
+                <h3>2- tools</h3>
+                <button class="btn btn-secondary" onclick="addState()">➕ add State</button>
+                <button class="btn btn-secondary" id="btn-connect" onclick="toggleConnect()">🔗 draw Transition</button>
+                <button class="btn btn-success" onclick="generateCode()">✨ verilog generation</button>
+            </div>
+
+            <div class="section">
+                <h3>3- element setting</h3>
+                <div id="props-panel" class="prop-empty">
+                    <p>click on element to see the setting</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container">
+            <div class="top-bar">
+                <div class="tool-group">
+                    <button class="tool-btn" onclick="runLayout('cose')">network</button>
+                    <button class="tool-btn" onclick="runLayout('circle')">cyclic</button>
+                    <button class="tool-btn" onclick="runLayout('breadthfirst')">tree</button>
+                    <button class="tool-btn" onclick="runLayout('grid')">table</button>
+                </div>
+                <div class="tool-group">
+                    <button class="tool-btn" onclick="undo()">↩ Undo</button>
+                    <button class="tool-btn" onclick="redo()">↪ Redo</button>
+                    <button class="tool-btn" onclick="exportPNG()">🖼 PNG</button>
+                    <button class="tool-btn" onclick="exportSVG()">📐 SVG</button>
+                </div>
+            </div>
+            <div id="cy"></div>
+            <div id="modal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>generated code</h3>
+                    <pre id="generated-code"></pre>
+                    <button class="btn btn-primary" onclick="copyCode()">copy code</button>
+                    <button class="btn btn-secondary" onclick="closeModal()">close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
