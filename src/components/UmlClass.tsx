@@ -56,7 +56,7 @@ export const UmlClass: React.FC<UmlClassProps> = ({ cls }) => {
         }
         needsUpdate = true;
       }
-      if (needsUpdate && !isPolygon && !isImage && !isShape) {
+      if (needsUpdate && !isPolygon && !isImage && !isShape && !isFsmState) {
         updateClass(cls.id, updates);
       }
     }
@@ -243,10 +243,13 @@ export const UmlClass: React.FC<UmlClassProps> = ({ cls }) => {
   };
 
   if (isFsmState) {
-    const w = cls.width || 140;
+    const fillColor = themeOpacityMap[color] || themeOpacityMap.slate;
+    const fillOpacity = cls.fillOpacity ?? 0.2;
+    const strokeColor = isAlignKey ? '#ef4444' : (cls.strokeStyle !== 'none' ? fillColor : '#3b82f6');
+    const strokeWidth = isAlignKey ? 3 : 2;
+    const strokeDasharray = cls.strokeStyle === 'dashed' ? '8,8' : 'none';
     const isSigVisible = cls.signalsVisible !== false;
-    const sigMode = cls.signalMode || 'issued';
-    const colorHex = cls.color === 'yellow' ? '#eab308' : cls.color === 'green' ? '#10b981' : cls.color === 'rose' ? '#f43f5e' : '#3b82f6';
+    const h = cls.height || cls.width;
 
     return (
       <div
@@ -255,92 +258,77 @@ export const UmlClass: React.FC<UmlClassProps> = ({ cls }) => {
         onMouseDown={handleMouseDown}
         onContextMenu={handleContextMenu}
         className={`absolute flex flex-col items-center z-10 
-          ${isAlignKey ? 'ring-4 ring-red-500/50 z-20' : (isSelected ? 'ring-4 ring-blue-500/50 z-20' : '')}
+          ${isAlignKey ? 'z-20' : (isSelected ? 'z-20' : '')}
           ${isDragging ? 'cursor-grabbing opacity-80' : ''}
         `}
-        style={{ left: cls.x, top: cls.y, width: w }}
+        style={{ left: cls.x, top: cls.y, width: cls.width }}
         dir="ltr"
       >
-        <div className="relative flex flex-col items-center w-full">
-          {/* دایره اصلی استیت */}
-          <div
-            onMouseDown={handleDragStart}
-            onDoubleClick={(e) => { if (e.detail === 2) selectElement(cls.id, false, true); }}
-            className="w-full rounded-full flex items-center justify-center shadow-xl cursor-grab active:cursor-grabbing transition-all"
-            style={{
-              height: w,
-              minHeight: 100,
-              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              border: `4px solid ${colorHex}`,
-              boxShadow: `0 4px 14px 0 ${colorHex}33`
-            }}
-          >
+        <div className="relative" style={{ width: cls.width, height: h }}>
+          <svg className="w-full h-full overflow-visible pointer-events-none absolute top-0 left-0">
+            <ellipse
+              cx={cls.width / 2}
+              cy={h / 2}
+              rx={Math.max(1, cls.width / 2 - 1)}
+              ry={Math.max(1, h / 2 - 1)}
+              fill={fillColor}
+              fillOpacity={fillOpacity}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+              strokeDasharray={strokeDasharray}
+              className={isAlignKey ? 'drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]' : (isSelected ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'hover:drop-shadow-md')}
+              style={{ pointerEvents: 'auto', cursor: 'move' }}
+              onMouseDown={handleDragStart}
+              onContextMenu={handleContextMenu}
+            />
+          </svg>
+
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <input
               type="text"
               value={cls.name}
               onChange={(e) => updateClass(cls.id, { name: e.target.value })}
               onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
               onBlur={() => commitHistory()}
-              className="bg-transparent text-center text-white font-bold text-sm outline-none w-4/5 focus:bg-white/10 rounded transition-colors px-2 py-1"
-              placeholder="STATE_NAME"
+              className="bg-transparent text-center font-bold text-sm outline-none w-4/5 focus:bg-white/10 dark:focus:bg-black/10 rounded transition-colors px-2 py-1 pointer-events-auto text-slate-900 dark:text-white"
+              placeholder="STATE"
             />
           </div>
 
-          {/* دکمه مخفی کردن/نمایش سیگنال‌ها */}
+          {/* دکمه شناور مخفی کردن/نمایش سیگنال‌ها */}
           <button
             onClick={(e) => { e.stopPropagation(); updateClass(cls.id, { signalsVisible: !isSigVisible }); commitHistory(); }}
-            className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-800 border-2 rounded-full flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors z-20 shadow-md"
-            style={{ borderColor: colorHex }}
+            className="absolute left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-800 border-2 rounded-full flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors z-20 shadow-md"
+            style={{ bottom: -12, borderColor: strokeColor }}
             title={isSigVisible ? "Hide Signals" : "Show Signals"}
           >
             {isSigVisible ? <Minus size={12} /> : <Plus size={12} />}
           </button>
-
-          {/* کارت سیگنال‌ها (حالت‌دار و شیشه‌ای) */}
-          {isSigVisible && (
-            <div className="w-full mt-5 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg p-2 shadow-md backdrop-blur-sm flex flex-col gap-2">
-
-              {/* سوییچر بین Issued و All Signals */}
-              <div className="flex bg-slate-200 dark:bg-slate-900 rounded p-0.5 gap-0.5">
-                <button
-                  onClick={(e) => { e.stopPropagation(); updateClass(cls.id, { signalMode: 'issued' }); }}
-                  className={`flex-1 text-[10px] py-1 rounded font-bold transition-colors ${sigMode === 'issued' ? 'bg-blue-500 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'}`}
-                >
-                  Issued Signals
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); updateClass(cls.id, { signalMode: 'all' }); }}
-                  className={`flex-1 text-[10px] py-1 rounded font-bold transition-colors ${sigMode === 'all' ? 'bg-purple-500 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'}`}
-                >
-                  All Signals (Adv)
-                </button>
-              </div>
-
-              <textarea
-                value={(sigMode === 'issued' ? cls.issuedSignals : cls.allSignals) || ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (sigMode === 'issued') updateClass(cls.id, { issuedSignals: val });
-                  else updateClass(cls.id, { allSignals: val });
-                }}
-                onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
-                onBlur={() => commitHistory()}
-                onMouseDown={(e) => e.stopPropagation()}
-                className={`w-full bg-transparent text-[11px] font-mono outline-none resize-none min-h-[40px] ${sigMode === 'issued' ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}
-                rows={3}
-                placeholder={sigMode === 'issued' ? 'e.g. out_valid = 1' : 'e.g. counter = 0'}
-              />
-            </div>
-          )}
         </div>
+
+        {/* کادر سیگنال‌ها (فقط وقتی فعال است نمایش داده می‌شود) */}
+        {isSigVisible && (
+          <div className="w-full mt-5 bg-slate-100/90 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 rounded-lg shadow-md backdrop-blur-sm">
+            <textarea
+              value={cls.issuedSignals || ''}
+              onChange={(e) => updateClass(cls.id, { issuedSignals: e.target.value })}
+              onFocus={() => { if (!selectedIds.includes(cls.id)) selectElement(cls.id); }}
+              onBlur={() => commitHistory()}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="w-full bg-transparent text-[11px] font-mono text-emerald-600 dark:text-emerald-400 outline-none resize-none p-2 min-h-[40px]"
+              rows={3}
+              placeholder="e.g. out_valid = 1"
+            />
+          </div>
+        )}
 
         {/* دستگیره تغییر سایز */}
         {isSelected && (
           <div
             onMouseDown={handleResizeStart}
-            className="resize-handle absolute -right-2 bottom-0 w-4 h-4 cursor-nwse-resize z-20"
+            className="resize-handle absolute right-0 bottom-0 w-4 h-4 cursor-nwse-resize z-20 pointer-events-auto"
           >
-            <div className="absolute right-1 bottom-1 w-2.5 h-2.5 bg-white border-2 border-blue-500 rounded-sm shadow-sm"></div>
+            <div className="absolute right-1 bottom-1 w-2.5 h-2.5 border-r-2 border-b-2 border-slate-500 dark:border-slate-300 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]"></div>
           </div>
         )}
       </div>

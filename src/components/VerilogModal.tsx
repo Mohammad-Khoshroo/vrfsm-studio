@@ -21,10 +21,11 @@ export const VerilogModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             });
             const data = await res.json();
 
-            if (data.error) {
-                showAlert(`Error: ${data.error}\n${data.details || ''}`, 'error');
+            if (!data || data.error) {
+                showAlert(`Error: ${data?.error || 'Unknown'}\n${data?.details || ''}`, 'error');
+                return;
             } else {
-                const newClasses = data.states.map((s: string, i: number) => ({
+                const newClasses = (data.states || []).map((s: string, i: number) => ({
                     id: s,
                     type: 'fsm_state',
                     name: s,
@@ -36,16 +37,19 @@ export const VerilogModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                     allSignals: '',
                     signalsVisible: true,
                     signalMode: 'issued',
-                    color: 'blue'
+                    color: 'blue',
+                    fillOpacity: 0.15,
+                    strokeStyle: 'solid'
                 }));
-                const newArrows = data.transitions.map((t: any) => ({
+
+                const newArrows = (data.transitions || []).map((t: any) => ({
                     id: 'arrow-' + Date.now() + Math.random(),
                     type: 'association',
                     start: { x: 0, y: 0, attachedTo: t.source, anchorIndex: 0 },
                     end: { x: 0, y: 0, attachedTo: t.target, anchorIndex: 0 },
                     controlPoints: [],
                     startLabel: ' ',
-                    middleLabel: t.condition,
+                    middleLabel: t.condition || ' ',
                     endLabel: ' ',
                     startLabelOffset: { x: 0, y: 0 },
                     middleLabelOffset: { x: 0, y: 0 },

@@ -35,8 +35,9 @@ export const getRawClassAnchors = (cls: UmlClassType, estimatedH?: number): Poin
     return pts;
   }
 
-  if (clsType === 'shape') {
-    if (cls.shapeType === 'ellipse') {
+  // تغییر در این بخش: اضافه شدن fsm_state
+  if (clsType === 'shape' || clsType === 'fsm_state') {
+    if (clsType === 'fsm_state' || cls.shapeType === 'ellipse') {
       const pts: Point[] = [];
       const cx = x + w / 2;
       const cy = y + h / 2;
@@ -105,14 +106,9 @@ export const getRawClassAnchors = (cls: UmlClassType, estimatedH?: number): Poin
   const points: Point[] = [];
   const segmentsx = 6;
   const segmentsy = 8;
-
-  // Top edge (Left to Right)
   for (let i = 0; i < segmentsy; i++) points.push({ x: x + (w * i) / segmentsy, y: y });
-  // Right edge (Top to Bottom)
   for (let i = 0; i < segmentsx; i++) points.push({ x: x + w, y: y + (h * i) / segmentsx });
-  // Bottom edge (Right to Left)
   for (let i = 0; i < segmentsy; i++) points.push({ x: x + w - (w * i) / segmentsy, y: y + h });
-  // Left edge (Bottom to Top)
   for (let i = 0; i < segmentsx; i++) points.push({ x: x, y: y + h - (h * i) / segmentsx });
 
   return points;

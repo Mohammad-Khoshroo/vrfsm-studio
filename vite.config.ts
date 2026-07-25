@@ -33,62 +33,77 @@ function parseWithVerilator(verilogCode: string) {
     }
 
     function traverse(node: any, currentState: string | null = null, condition = "always") {
-      if (Array.isArray(node)) {
-        node.forEach(item => traverse(item, currentState, condition));
-      } else if (node && typeof node === 'object') {
-        const nodeType = node.type || "";
-        if (nodeType === "VAR" && [true, "true", 1].includes(node.isParam)) {
-          const stateName = node.name;
-          if (stateName && !states.includes(stateName)) states.push(stateName);
-        } else if (nodeType === "CASEITEM") {
-          const conds = node.condsp || [];
-          if (conds.length > 0 && typeof conds[0] === 'object') {
-            const csName = getStateName(conds[0]);
-            if (states.includes(csName || '')) {
-              currentState = csName;
-              (node.stmtsp || []).forEach((stmt: any) => traverse(stmt, currentState, "always"));
-            }
-          }
-          return;
-        } else if (nodeType === "IF") {
-          if (currentState) {
-            const condp = node.condp || [];
-            let condStr = "expr";
-            if (condp.length > 0 && typeof condp[0] === 'object' && condp[0].type === "VARREF") {
-              condStr = condp[0].name;
-            }
-            if ((node.thenp || []).length > 0) traverse(node.thenp, currentState, condStr);
-            if ((node.elsep || []).length > 0) {
-              let elseCond = condStr.startsWith('!') ? condStr.substring(1) : `NOT ${condStr}`;
-              traverse(node.elsep, currentState, elseCond);
-            }
-          }
-          return;
-        } else if (nodeType === "ASSIGN") {
-          const lhs = node.lhsp || [];
-          const rhs = node.rhsp || [];
-          if (lhs.length > 0 && rhs.length > 0 && typeof lhs[0] === 'object' && typeof rhs[0] === 'object') {
-            const lhsName = lhs[0].name;
-            if (lhsName === "ns" || lhsName === "next_state") {
-              processRhs(rhs[0], currentState, condition);
-            } else if (currentState) {
-              if (!stateSignals[currentState]) stateSignals[currentState] = [];
-              let rhsStr = "expr";
-              if (rhs[0].type === "CONST") {
-                rhsStr = rhs[0].origText || (rhs[0].origTextMap && rhs[0].origTextMap.flattened) || "1";
-              } else if (rhs[0].type === "VARREF") {
-                rhsStr = rhs[0].name;
+      try {
+        if (Array.isArray(node)) {
+          node.forEach(item => traverse(item, currentState, condition));
+        } else if (node && typeof node === 'object') {
+          const nodeType = node.type || "";
+          if (nodeType === "VAR" && [true, "true", 1].includes(node.isParam)) {
+            const stateName = node.name;
+            if (stateName && !states.includes(stateName)) states.push(stateName);
+          } else if (nodeType === "CASEITEM") {
+            const conds = node.condsp || [];
+            const condArr = Array.isArray(conds) ? conds : [conds];
+            if (condArr.length > 0 && typeof condArr[0] === 'object') {
+              const csName = getStateName(condArr[0]);
+              if (csName && states.includes(csName)) {
+                currentState = csName;
+                const stmts = node.stmtsp || [];
+                const stmtsArr = Array.isArray(stmts) ? stmts : [stmts];
+                stmtsArr.forEach((stmt: any) => traverse(stmt, currentState, "always"));
               }
-              stateSignals[currentState].push(`${lhsName} = ${rhsStr}`);
+            }
+            return;
+          } else if (nodeType === "IF") {
+            if (currentState) {
+              const condp = node.condp || [];
+              const condpArr = Array.isArray(condp) ? condp : [condp];
+              let condStr = "expr";
+              if (condpArr.length > 0 && typeof condpArr[0] === 'object' && condpArr[0].type === "VARREF") {
+                condStr = condpArr[0].name;
+              }
+              const thenp = node.thenp || [];
+              const thenpArr = Array.isArray(thenp) ? thenp : [thenp];
+              if (thenpArr.length > 0) traverse(thenpArr, currentState, condStr);
+
+              const elsep = node.elsep || [];
+              const elsepArr = Array.isArray(elsep) ? elsep : [elsep];
+              if (elsepArr.length > 0) {
+                let elseCond = condStr.startsWith('!') ? condStr.substring(1) : `NOT ${condStr}`;
+                traverse(elsepArr, currentState, elseCond);
+              }
+            }
+            return;
+          } else if (nodeType === "ASSIGN") {
+            const lhs = node.lhsp || [];
+            const rhs = node.rhsp || [];
+            const lhsArr = Array.isArray(lhs) ? lhs : [lhs];
+            const rhsArr = Array.isArray(rhs) ? rhs : [rhs];
+            if (lhsArr.length > 0 && rhsArr.length > 0 && typeof lhsArr[0] === 'object' && typeof rhsArr[0] === 'object') {
+              const lhsName = lhsArr[0].name;
+              if (lhsName === "ns" || lhsName === "next_state") {
+                processRhs(rhsArr[0], currentState, condition);
+              } else if (currentState) {
+                if (!stateSignals[currentState]) stateSignals[currentState] = [];
+                let rhsStr = "expr";
+                if (rhsArr[0].type === "CONST") {
+                  rhsStr = rhsArr[0].origText || (rhsArr[0].origTextMap && rhsArr[0].origTextMap.flattened) || "1";
+                } else if (rhsArr[0].type === "VARREF") {
+                  rhsStr = rhsArr[0].name;
+                }
+                stateSignals[currentState].push(`${lhsName} = ${rhsStr}`);
+              }
+            }
+            return;
+          }
+          for (const key in node) {
+            if (["modulesp", "stmtsp", "itemsp", "thenp", "elsep"].includes(key)) {
+              traverse(node[key], currentState, condition);
             }
           }
-          return;
         }
-        for (const key in node) {
-          if (["modulesp", "stmtsp", "itemsp", "thenp", "elsep"].includes(key)) {
-            traverse(node[key], currentState, condition);
-          }
-        }
+      } catch (e) {
+        console.error("AST traversal error:", e);
       }
     }
 
@@ -97,18 +112,21 @@ function parseWithVerilator(verilogCode: string) {
       const rhsType = rhsNode.type || "";
       if (rhsType === "COND") {
         const condp = rhsNode.condp || [];
+        const condpArr = Array.isArray(condp) ? condp : [condp];
         let condStr = "expr";
-        if (condp.length > 0 && typeof condp[0] === 'object' && condp[0].type === "VARREF") {
-          condStr = condp[0].name;
+        if (condpArr.length > 0 && typeof condpArr[0] === 'object' && condpArr[0].type === "VARREF") {
+          condStr = condpArr[0].name;
         }
         const thenp = rhsNode.thenp || [];
-        const elsep = rhsNode.elsep || [];
-        if (thenp.length > 0 && typeof thenp[0] === 'object') {
-          const target = getStateName(thenp[0]);
+        const thenpArr = Array.isArray(thenp) ? thenp : [thenp];
+        if (thenpArr.length > 0 && typeof thenpArr[0] === 'object') {
+          const target = getStateName(thenpArr[0]);
           if (target && states.includes(target)) transitions.push({ source: currentState, target, condition: condStr });
         }
-        if (elsep.length > 0 && typeof elsep[0] === 'object') {
-          const target = getStateName(elsep[0]);
+        const elsep = rhsNode.elsep || [];
+        const elsepArr = Array.isArray(elsep) ? elsep : [elsep];
+        if (elsepArr.length > 0 && typeof elsepArr[0] === 'object') {
+          const target = getStateName(elsepArr[0]);
           if (target && states.includes(target)) {
             let elseCond = condStr.startsWith('!') ? condStr.substring(1) : `NOT ${condStr}`;
             transitions.push({ source: currentState, target, condition: elseCond });

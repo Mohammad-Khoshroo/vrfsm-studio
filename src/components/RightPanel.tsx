@@ -14,13 +14,13 @@ export const RightPanel: React.FC = () => {
   const selectedArrows = arrows.filter(a => selectedIds.includes(a.id));
   const totalSelected = selectedClasses.length + selectedArrows.length;
 
-  const hasNormalOrPolygon = selectedClasses.some(c => c.type === 'class' || c.type === 'text' || !c.type || c.type === 'polygon' || c.type === 'comment' || c.type === 'shape');
+  const hasNormalOrPolygon = selectedClasses.some(c => c.type === 'class' || c.type === 'text' || !c.type || c.type === 'polygon' || c.type === 'comment' || c.type === 'shape' || c.type === 'fsm_state');
   const hasComment = selectedClasses.some(c => c.type === 'comment');
   const hasPolygon = selectedClasses.some(c => c.type === 'polygon');
   const hasImage = selectedClasses.some(c => c.type === 'image');
   const hasFsmState = selectedClasses.some(c => c.type === 'fsm_state');
   const hasArrow = selectedArrows.length > 0;
-  
+
   const singleClass = selectedClasses.length === 1 ? selectedClasses[0] : null;
   const singleArrow = selectedArrows.length === 1 ? selectedArrows[0] : null;
 
@@ -43,20 +43,20 @@ export const RightPanel: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex-grow">
-                    <Slider 
-                      min={0} max={359} step={1} 
-                      value={singleClass.rotation || 0} 
-                      onChange={(e) => updateClass(singleClass.id, { rotation: parseInt(e.target.value) })} 
+                    <Slider
+                      min={0} max={359} step={1}
+                      value={singleClass.rotation || 0}
+                      onChange={(e) => updateClass(singleClass.id, { rotation: parseInt(e.target.value) })}
                       onPointerDown={() => startDrag({ targetId: singleClass.id, type: 'panel-slider' })}
                       onPointerUp={() => { endDrag(); commitHistory(); }}
                     />
                   </div>
                   <div className="flex items-center gap-1 w-[52px] justify-end">
-                    <input 
-                      type="number" 
-                      min={0} 
-                      max={359} 
-                      value={singleClass.rotation || 0} 
+                    <input
+                      type="number"
+                      min={0}
+                      max={359}
+                      value={singleClass.rotation || 0}
                       onChange={(e) => {
                         let val = parseInt(e.target.value);
                         if (isNaN(val)) val = 0;
@@ -88,7 +88,7 @@ export const RightPanel: React.FC = () => {
                     { name: 'cyan', bg: 'bg-cyan-400' },
                     { name: 'orange', bg: 'bg-orange-400' },
                   ].map(color => (
-                    <button 
+                    <button
                       key={color.name}
                       onClick={() => {
                         selectedClasses.forEach(c => updateClass(c.id, { color: color.name as any }));
@@ -101,7 +101,7 @@ export const RightPanel: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {selectedClasses.length > 1 && (
               <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-4">
                 <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -118,63 +118,63 @@ export const RightPanel: React.FC = () => {
                     <button onClick={() => { alignSelected('bottom'); commitHistory(); }} className="flex-1 p-1.5 hover:bg-white dark:hover:bg-slate-600 rounded transition-colors text-slate-600 dark:text-slate-300" title="Align Bottom"><AlignRight size={16} className="mx-auto rotate-90" /></button>
                   </div>
                   <div className="flex bg-slate-100 dark:bg-slate-700/50 rounded-lg p-1 gap-1">
-                    <button onClick={() => { alignSelected('distribute-h'); commitHistory(); }} className="flex-1 flex items-center justify-center gap-1.5 p-1.5 hover:bg-white dark:hover:bg-slate-600 rounded transition-colors text-[11px] font-medium text-slate-600 dark:text-slate-300" title="Distribute Horizontally"><GripHorizontal size={14}/> Distribute H</button>
-                    <button onClick={() => { alignSelected('distribute-v'); commitHistory(); }} className="flex-1 flex items-center justify-center gap-1.5 p-1.5 hover:bg-white dark:hover:bg-slate-600 rounded transition-colors text-[11px] font-medium text-slate-600 dark:text-slate-300" title="Distribute Vertically"><GripVertical size={14}/> Distribute V</button>
+                    <button onClick={() => { alignSelected('distribute-h'); commitHistory(); }} className="flex-1 flex items-center justify-center gap-1.5 p-1.5 hover:bg-white dark:hover:bg-slate-600 rounded transition-colors text-[11px] font-medium text-slate-600 dark:text-slate-300" title="Distribute Horizontally"><GripHorizontal size={14} /> Distribute H</button>
+                    <button onClick={() => { alignSelected('distribute-v'); commitHistory(); }} className="flex-1 flex items-center justify-center gap-1.5 p-1.5 hover:bg-white dark:hover:bg-slate-600 rounded transition-colors text-[11px] font-medium text-slate-600 dark:text-slate-300" title="Distribute Vertically"><GripVertical size={14} /> Distribute V</button>
                   </div>
                 </div>
               </div>
             )}
 
             {singleClass && (!singleClass.type || singleClass.type === 'class' || singleClass.type === 'text') && (
-                <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-4">
-                  <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between" >
-                    <div className="flex items-center gap-1.5"><Tag size={14} /> Badge</div>
-                    {singleClass.badge && (
-                      <button onClick={() => { updateClass(singleClass.id, { badge: undefined }); commitHistory(); }} className="text-red-500 hover:text-red-600 transition-colors" title="Remove Badge"><X size={14} /></button>
-                    )}
-                  </div>
-                  
-                  {!singleClass.badge ? (
-                    <button 
-                      onClick={() => {
-                        updateClass(singleClass.id, { badge: { text: 'New', color: 'blue', icon: 'star' } });
-                        commitHistory();
-                      }}
-                      className="w-full px-3 py-2 text-[13px] font-medium flex justify-center items-center gap-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600"
-                    >
-                      <Plus size={14} /> Add Badge
-                    </button>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      <input 
-                        type="text" 
-                        value={singleClass.badge.text} 
-                        onChange={(e) => { updateClass(singleClass.id, { badge: { ...singleClass.badge!, text: e.target.value } }); }}
-                        onBlur={() => commitHistory()}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"
-                        placeholder="Badge text..."
-                      />
-                      
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Theme</span>
-                        <div className="flex flex-wrap gap-2">
-                          {[ { name: 'slate', bg: 'bg-slate-400' }, { name: 'yellow', bg: 'bg-amber-400' }, { name: 'blue', bg: 'bg-blue-400' }, { name: 'green', bg: 'bg-emerald-400' }, { name: 'rose', bg: 'bg-rose-400' }, { name: 'purple', bg: 'bg-purple-400' } ].map(color => (
-                            <button key={color.name} onClick={() => { updateClass(singleClass.id, { badge: { ...singleClass.badge!, color: color.name as any } }); commitHistory(); }} className={`w-5 h-5 rounded-full ${color.bg} border border-black/10 dark:border-white/10 transition-transform ${singleClass.badge?.color === color.name ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-800 scale-110' : 'hover:scale-110'}`} title={color.name} />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Icon</span>
-                        <div className="flex flex-wrap gap-1">
-                          {[ { id: 'star', icon: <Star size={14} /> }, { id: 'zap', icon: <Zap size={14} /> }, { id: 'shield', icon: <Shield size={14} /> }, { id: 'check', icon: <CheckCircle size={14} /> }, { id: 'alert', icon: <AlertTriangle size={14} /> }, { id: 'info', icon: <Info size={14} /> } ].map(iconObj => (
-                            <button key={iconObj.id} onClick={() => { updateClass(singleClass.id, { badge: { ...singleClass.badge!, icon: iconObj.id } }); commitHistory(); }} className={`p-1.5 rounded transition-colors ${singleClass.badge?.icon === iconObj.id ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`} title={iconObj.id} >{iconObj.icon}</button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-4">
+                <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between" >
+                  <div className="flex items-center gap-1.5"><Tag size={14} /> Badge</div>
+                  {singleClass.badge && (
+                    <button onClick={() => { updateClass(singleClass.id, { badge: undefined }); commitHistory(); }} className="text-red-500 hover:text-red-600 transition-colors" title="Remove Badge"><X size={14} /></button>
                   )}
                 </div>
-              )}
+
+                {!singleClass.badge ? (
+                  <button
+                    onClick={() => {
+                      updateClass(singleClass.id, { badge: { text: 'New', color: 'blue', icon: 'star' } });
+                      commitHistory();
+                    }}
+                    className="w-full px-3 py-2 text-[13px] font-medium flex justify-center items-center gap-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600"
+                  >
+                    <Plus size={14} /> Add Badge
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      value={singleClass.badge.text}
+                      onChange={(e) => { updateClass(singleClass.id, { badge: { ...singleClass.badge!, text: e.target.value } }); }}
+                      onBlur={() => commitHistory()}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Badge text..."
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">Theme</span>
+                      <div className="flex flex-wrap gap-2">
+                        {[{ name: 'slate', bg: 'bg-slate-400' }, { name: 'yellow', bg: 'bg-amber-400' }, { name: 'blue', bg: 'bg-blue-400' }, { name: 'green', bg: 'bg-emerald-400' }, { name: 'rose', bg: 'bg-rose-400' }, { name: 'purple', bg: 'bg-purple-400' }].map(color => (
+                          <button key={color.name} onClick={() => { updateClass(singleClass.id, { badge: { ...singleClass.badge!, color: color.name as any } }); commitHistory(); }} className={`w-5 h-5 rounded-full ${color.bg} border border-black/10 dark:border-white/10 transition-transform ${singleClass.badge?.color === color.name ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-800 scale-110' : 'hover:scale-110'}`} title={color.name} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">Icon</span>
+                      <div className="flex flex-wrap gap-1">
+                        {[{ id: 'star', icon: <Star size={14} /> }, { id: 'zap', icon: <Zap size={14} /> }, { id: 'shield', icon: <Shield size={14} /> }, { id: 'check', icon: <CheckCircle size={14} /> }, { id: 'alert', icon: <AlertTriangle size={14} /> }, { id: 'info', icon: <Info size={14} /> }].map(iconObj => (
+                          <button key={iconObj.id} onClick={() => { updateClass(singleClass.id, { badge: { ...singleClass.badge!, icon: iconObj.id } }); commitHistory(); }} className={`p-1.5 rounded transition-colors ${singleClass.badge?.icon === iconObj.id ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`} title={iconObj.id} >{iconObj.icon}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {hasComment && (
               <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-4">
@@ -186,7 +186,7 @@ export const RightPanel: React.FC = () => {
                   <span className="text-sm font-mono text-slate-700 dark:text-slate-300">{singleClass?.fontSize || 14}px</span>
                   <button onClick={() => { selectedClasses.filter(c => c.type === 'comment').forEach(c => updateClass(c.id, { fontSize: Math.min(72, (c.fontSize || 14) + 2) })); commitHistory(); }} className="w-8 h-8 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-slate-700 dark:text-slate-200"><Plus size={14} /></button>
                 </div>
-                
+
                 <div className="flex flex-col gap-2 mt-1">
                   <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Text Align</div>
                   <div className="flex gap-1">
@@ -195,7 +195,7 @@ export const RightPanel: React.FC = () => {
                       { align: 'center', icon: <AlignCenter size={14} /> },
                       { align: 'right', icon: <AlignRight size={14} /> }
                     ].map(opt => (
-                      <button 
+                      <button
                         key={opt.align}
                         onClick={() => { selectedClasses.filter(c => c.type === 'comment').forEach(c => updateClass(c.id, { textAlign: opt.align as any })); commitHistory(); }}
                         className={`flex-1 flex justify-center items-center py-1.5 rounded transition-colors ${singleClass?.textAlign === opt.align || (!singleClass?.textAlign && opt.align === 'left') ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400'}`}
@@ -228,7 +228,7 @@ export const RightPanel: React.FC = () => {
               </div>
             )}
 
-            {(singleClass?.type === 'polygon' || singleClass?.type === 'comment' || singleClass?.type === 'shape') && (
+            {(singleClass?.type === 'polygon' || singleClass?.type === 'comment' || singleClass?.type === 'shape' || singleClass?.type === 'fsm_state') && (
               <div className="flex flex-col gap-5 border-t border-slate-100 dark:border-slate-700/50 pt-4">
                 {singleClass.shapeType === 'regularPolygon' && (
                   <div className="flex flex-col gap-2">
@@ -269,7 +269,7 @@ export const RightPanel: React.FC = () => {
                   <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Border Style</div>
                   <div className="flex gap-1">
                     {['none', 'solid', 'dashed'].map(st => (
-                      <button 
+                      <button
                         key={st}
                         onClick={() => { updateClass(singleClass.id, { strokeStyle: st as any }); commitHistory(); }}
                         className={`flex-1 py-1.5 text-xs rounded border capitalize transition-colors font-medium ${(singleClass.strokeStyle || 'none') === st ? 'bg-slate-200 border-slate-400 text-slate-800 dark:bg-slate-600 dark:text-white dark:border-slate-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
@@ -337,8 +337,8 @@ export const RightPanel: React.FC = () => {
                       img.onload = () => {
                         const newAspectRatio = img.height / img.width;
                         const newHeight = singleClass.width * newAspectRatio;
-                        updateClass(singleClass.id, { 
-                          imageUrl: objectUrl, 
+                        updateClass(singleClass.id, {
+                          imageUrl: objectUrl,
                           aspectRatio: newAspectRatio,
                           height: newHeight
                         });
@@ -367,7 +367,7 @@ export const RightPanel: React.FC = () => {
                     { name: 'yellow', bg: 'bg-amber-500' },
                     { name: 'rose', bg: 'bg-rose-500' },
                   ].map(color => (
-                    <button 
+                    <button
                       key={color.name}
                       onClick={() => {
                         selectedClasses.filter(c => c.type === 'fsm_state').forEach(c => updateClass(c.id, { color: color.name as any }));
@@ -398,7 +398,7 @@ export const RightPanel: React.FC = () => {
                       { name: 'rose', bg: 'bg-rose-400' },
                       { name: 'purple', bg: 'bg-purple-400' }
                     ].map(color => (
-                      <button 
+                      <button
                         key={color.name}
                         onClick={() => {
                           selectedArrows.forEach(a => updateArrow(a.id, { color: color.name as any }));
@@ -410,7 +410,7 @@ export const RightPanel: React.FC = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-2">
                   {ARROW_TYPES.map(arrType => (
                     <button
@@ -452,13 +452,13 @@ export const RightPanel: React.FC = () => {
                     {(['start', 'middle', 'end'] as const).map(pos => {
                       const val = singleArrow[`${pos}Label`];
                       if (!val || val.trim() === '') return null; // Show only if label is active
-                      
+
                       const currentFontSize = (singleArrow[`${pos}LabelFontSize` as keyof UmlArrowType] as number) || 14;
-                      
+
                       return (
                         <div key={pos} className="flex flex-col gap-3 pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
                           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 capitalize">{pos} Label</span>
-                          
+
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-slate-400 font-bold uppercase">Size</span>
                             <div className="flex items-center gap-1">
@@ -471,17 +471,17 @@ export const RightPanel: React.FC = () => {
                           <div className="flex flex-col gap-1.5">
                             <span className="text-[10px] text-slate-400 font-bold uppercase">Orientation</span>
                             <div className="flex gap-1">
-                            {[
-                              { angle: 0, icon: <TypeIcon size={14} />, label: 'Horizontal' },
-                              { angle: 90, icon: <TypeIcon size={14} className="rotate-90" />, label: 'Down' },
-                              { angle: -90, icon: <TypeIcon size={14} className="-rotate-90" />, label: 'Up' },
-                            ].map(opt => {
-                              const currentAngle = singleArrow[`${pos}LabelRotation` as keyof UmlArrowType] || 0;
-                              return (
-                                <button key={opt.angle} onClick={() => { updateArrow(singleArrow.id, { [`${pos}LabelRotation`]: opt.angle } as Partial<UmlArrowType>); commitHistory(); }} className={`flex-1 flex justify-center items-center py-2 rounded transition-colors ${currentAngle === opt.angle ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400'}`} title={opt.label}>{opt.icon}</button>
-                              );
-                            })}
-                          </div>
+                              {[
+                                { angle: 0, icon: <TypeIcon size={14} />, label: 'Horizontal' },
+                                { angle: 90, icon: <TypeIcon size={14} className="rotate-90" />, label: 'Down' },
+                                { angle: -90, icon: <TypeIcon size={14} className="-rotate-90" />, label: 'Up' },
+                              ].map(opt => {
+                                const currentAngle = singleArrow[`${pos}LabelRotation` as keyof UmlArrowType] || 0;
+                                return (
+                                  <button key={opt.angle} onClick={() => { updateArrow(singleArrow.id, { [`${pos}LabelRotation`]: opt.angle } as Partial<UmlArrowType>); commitHistory(); }} className={`flex-1 flex justify-center items-center py-2 rounded transition-colors ${currentAngle === opt.angle ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400'}`} title={opt.label}>{opt.icon}</button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       );

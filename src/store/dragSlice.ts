@@ -30,7 +30,7 @@ export const createDragSlice: StateCreator<
                 } else if (
                     (updates.type === 'class' || updates.type === 'selection-group') &&
                     ((a.start.attachedTo && idsToMove.includes(a.start.attachedTo)) ||
-                     (a.end.attachedTo && idsToMove.includes(a.end.attachedTo)))
+                        (a.end.attachedTo && idsToMove.includes(a.end.attachedTo)))
                 ) {
                     initialPositions[a.id] = { type: 'attached-arrow', controlPoints: a.controlPoints || [] };
                 }
@@ -60,7 +60,7 @@ export const createDragSlice: StateCreator<
                         const rad = c.rotation * Math.PI / 180;
                         const cos = Math.cos(rad);
                         const sin = Math.sin(rad);
-                        const pts = [{x: c.x, y: c.y}, {x: c.x + w, y: c.y}, {x: c.x + w, y: c.y + h}, {x: c.x, y: c.y + h}];
+                        const pts = [{ x: c.x, y: c.y }, { x: c.x + w, y: c.y }, { x: c.x + w, y: c.y + h }, { x: c.x, y: c.y + h }];
                         pts.forEach(p => {
                             const rx = (p.x - cx) * cos - (p.y - cy) * sin + cx;
                             const ry = (p.x - cx) * sin + (p.y - cy) * cos + cy;
@@ -192,7 +192,7 @@ export const createDragSlice: StateCreator<
                         if (initPos.controlPoints && initPos.controlPoints.length >= 2) {
                             const startMoving = a.start.attachedTo && moveIds.includes(a.start.attachedTo);
                             const endMoving = a.end.attachedTo && moveIds.includes(a.end.attachedTo);
-                            
+
                             let newCps = initPos.controlPoints.map((cp: Point) => ({ ...cp }));
                             let changed = false;
 
@@ -314,7 +314,7 @@ export const createDragSlice: StateCreator<
                     localDeltaY = -deltaX * Math.sin(rad) + deltaY * Math.cos(rad);
                 }
 
-                const minW = cls.type === 'image' ? 20 : (cls.type === 'shape' ? 20 : 150);
+                const minW = cls.type === 'image' ? 20 : (cls.type === 'shape' || cls.type === 'fsm_state' ? 20 : 150);
                 let newWidth = Math.max(minW, offsetX + localDeltaX);
                 let newHeight = Math.max(20, (offsetY || 100) + localDeltaY);
                 const activeSnapLines: SnapLine[] = [];
