@@ -1,19 +1,21 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { PlusSquare, FileText, ArrowRight, ArrowRightFromLine, MoreHorizontal, Layers, GripHorizontal, Camera, PanelLeft, PanelRight, Download, Upload, Minus, Type, Hexagon, Image as ImageIcon, Shapes, Square, Circle, Triangle, PenTool, Cloud, HelpCircle } from 'lucide-react';
+import { PlusSquare, FileText, ArrowRight, ArrowRightFromLine, MoreHorizontal, Layers, GripHorizontal, Camera, PanelLeft, PanelRight, Download, Upload, Minus, Type, Hexagon, Image as ImageIcon, Shapes, Square, Circle, Triangle, PenTool, Cloud, HelpCircle, LayoutGrid } from 'lucide-react';
 import { domToPng } from 'modern-screenshot'
 import { HelpModal } from './HelpModal';
 import { VerilogModal } from './VerilogModal';
 import { Cpu } from 'lucide-react';
 
 export const Toolbar: React.FC = () => {
-  const { addClass, addTextBox, addComment, startDrawingPolygon, isDrawingPolygon, setPendingArrowType, pendingArrowType, settings, selectElement, toggleLeftPanel, isLeftPanelOpen, toggleRightPanel, isRightPanelOpen, classes, arrows, loadProject, addImage, pendingItemType, setPendingItemType, setPendingImageData, pendingShapeType, setPendingShapeType, showAlert } = useStore();
+  const { addClass, addTextBox, addComment, startDrawingPolygon, isDrawingPolygon, setPendingArrowType, pendingArrowType, settings, selectElement, toggleLeftPanel, isLeftPanelOpen, toggleRightPanel, isRightPanelOpen, classes, arrows, loadProject, addImage, pendingItemType, setPendingItemType, setPendingImageData, pendingShapeType, setPendingShapeType, showAlert, autoLayout } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const shapeMenuRef = useRef<HTMLDivElement>(null);
   const [isVerilogOpen, setIsVerilogOpen] = useState(false);
+  const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
+  const layoutMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -24,6 +26,15 @@ export const Toolbar: React.FC = () => {
     if (isShapeMenuOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isShapeMenuOpen]);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (layoutMenuRef.current && !layoutMenuRef.current.contains(e.target as Node)) {
+        setIsLayoutMenuOpen(false);
+      }
+    };
+    if (isLayoutMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isLayoutMenuOpen]);
 
   const handleExport = () => {
     selectElement(null);
@@ -175,6 +186,36 @@ export const Toolbar: React.FC = () => {
         <ImageIcon size={16} /> Image
       </button>
 
+      <div className="relative flex" ref={layoutMenuRef}>
+        <button
+          onClick={() => setIsLayoutMenuOpen(!isLayoutMenuOpen)}
+          className={`flex items-center gap-2 px-4 py-2 cursor-pointer border rounded-md font-medium text-[13px] transition-all shadow-sm ${isLayoutMenuOpen ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30'}`}
+        >
+          <LayoutGrid size={16} /> Auto Layout
+        </button>
+
+        {isLayoutMenuOpen && (
+          <div className="absolute top-full left-0 mt-1.5 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-[200] flex flex-col overflow-hidden py-1">
+            {[
+              { id: 'tree', label: 'Tree (FSM)' },
+              { id: 'circle', label: 'Circle (Cyclic)' },
+              { id: 'grid', label: 'Grid (Table)' },
+            ].map(layout => (
+              <button
+                key={layout.id}
+                onClick={() => {
+                  autoLayout(layout.id as any);
+                  setIsLayoutMenuOpen(false);
+                }}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <span className="flex-1 text-left">{layout.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
       {(() => {
@@ -221,7 +262,7 @@ export const Toolbar: React.FC = () => {
       <button onClick={() => setIsVerilogOpen(true)} className={btnClass} title="FSM Verilog Studio">
         <Cpu size={16} /> FSM Studio
       </button>
-      
+
       <div className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
       <button onClick={toggleRightPanel} className={`${btnClass} ${isRightPanelOpen ? 'bg-slate-100 dark:bg-slate-700' : ''}`} title="Toggle Properties Panel">

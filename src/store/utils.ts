@@ -192,3 +192,79 @@ export const base64ToBlobUrl = (base64: string) => {
      return base64;
   }
 };
+
+export const calculateLayout = (classes: any[], arrows: any[], type: 'circle' | 'grid' | 'tree' = 'tree') => {
+    const updates: Record<string, { x: number, y: number }> = {};
+    const n = classes.length;
+    if (n === 0) return updates;
+
+    if (type === 'circle') {
+        const radius = Math.max(200, n * 60);
+        const cx = 500, cy = 400;
+        classes.forEach((c, i) => {
+            const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+            updates[c.id] = { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
+        });
+    } else if (type === 'grid') {
+        const cols = Math.ceil(Math.sqrt(n));
+        const dx = 250, dy = 150;
+        const startX = 100, startY = 100;
+        classes.forEach((c, i) => {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            updates[c.id] = { x: startX + col * dx, y: startY + row * dy };
+        });
+    } else if (type === 'tree') {
+        const incoming: Record<string, number> = {};
+        const adj: Record<string, string[]> = {};
+        classes.forEach(c => { incoming[c.id] = 0; adj[c.id] = []; });
+        arrows.forEach(a => {
+            if (a.start.attachedTo && a.end.attachedTo && a.start.attachedTo !== a.end.attachedTo) {
+                incoming[a.end.attachedTo] = (incoming[a.end.attachedTo] || 0) + 1;
+                adj[a.start.attachedTo].push(a.end.attachedTo);
+            }
+        });
+        const roots = classes.filter(c => incoming[c.id] === 0).map(c => c.id);
+        if (roots.length === 0 && classes.length > 0) roots.push(classes[0].id);
+
+        const levels: Record<number, string[]> = {};
+        const queue = roots.map(id => ({ id, level: 0 }));
+        const visited = new Set(roots);
+        let maxLevel = 0;
+
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+            if (!levels[level]) levels[level] = [];
+            levels[level].push(id);
+            maxLevel = Math.max(maxLevel, level);
+            
+            adj[id].forEach(neighbor => {
+                if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    queue.push({ id: neighbor, level: level + 1 });
+                }
+            });
+        }
+        
+        let nextLevel = maxLevel + 1;
+        classes.forEach(c => {
+            if (!visited.has(c.id)) {
+                if (!levels[nextLevel]) levels[nextLevel] = [];
+                levels[nextLevel].push(c.id);
+            }
+        });
+
+        const dx = 280, dy = 200;
+        const startY = 100;
+        Object.keys(levels).forEach((lvlStr) => {
+            const lvl = parseInt(lvlStr);
+            const nodes = levels[lvlStr];
+            nodes.forEach((id, i) => {
+                const x = 500 + (i - (nodes.length - 1) / 2) * dx;
+                const y = startY + lvl * dy;
+                updates[id] = { x, y };
+            });
+        });
+    }
+    return updates;
+};

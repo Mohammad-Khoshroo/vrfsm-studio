@@ -8,12 +8,12 @@ import path from 'path';
 
 function parseWithVerilator(verilogCode: string) {
     try {
-        fs.writeFileSync("build/temp_fsm.v", verilogCode);
+        fs.writeFileSync("HDL/temp_fsm.v", verilogCode);
         const objDir = path.join(process.cwd(), 'obj_dir');
         if (fs.existsSync(objDir)) fs.rmSync(objDir, { recursive: true });
 
         try {
-            execSync('verilator --json-only --Wno-fatal --bbox-sys build/temp_fsm.v', { stdio: 'pipe' });
+            execSync('verilator --json-only --Wno-fatal --bbox-sys HDL/temp_fsm.v', { stdio: 'pipe' });
         } catch (err: any) {
             return { error: "Verilator Error", details: err.stderr.toString() };
         }

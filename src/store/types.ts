@@ -187,7 +187,7 @@ export interface ElementSlice {
   addShape: (shapeType: ShapeType, x?: number, y?: number, w?: number, h?: number) => string;
   addTextBox: (x?: number, y?: number, w?: number, h?: number) => string;
   addComment: (x?: number, y?: number, w?: number, h?: number) => string;
-
+  autoLayout: (type: 'circle' | 'grid' | 'tree') => void;
   startDrawingPolygon: () => void;
   addPolygonVertex: (x: number, y: number) => void;
   finishDrawingPolygon: () => void;

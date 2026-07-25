@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 obj_dir
+HDL
 
 node_modules
 dist
